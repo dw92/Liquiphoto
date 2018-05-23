@@ -23,34 +23,46 @@ public class Light {
 
     private Point position;
     private LightPoint light;
-    private int currentBrightness;
     private String id;
+    private int currentBrightness;
+    private boolean isOn;
 
-    public Light(LightPoint light, Point position) {
+    Light(LightPoint light, Point position) {
         this.light = light;
         this.position = position;
         this.currentBrightness = getBrightness();
+        this.isOn = false;
         this.id = light.getIdentifier();
     }
 
-    public LightPoint getLightPoint() {
-        return light;
-    }
 
     public String getName() {
         return light.getName();
     }
 
-    public void setPosition(Point position) {
-        this.position = position;
-    }
 
     public Point getPosition() {
         return position;
     }
 
+
+    public void setPosition(Point position) {
+        this.position = position;
+    }
+
+
     public String getId() {
         return id;
+    }
+
+
+    public boolean isOn() {
+        return isOn;
+    }
+
+
+    public boolean isReachable() {
+        return light.getLightState().isReachable();
     }
 
 
@@ -59,72 +71,61 @@ public class Light {
         newLightState.setOn(TRUE);
 
         updateState(newLightState);
+        isOn = true;
     }
+
 
     public void turnOff() {
         LightState newLightState = new LightState();
         newLightState.setOn(FALSE);
 
         updateState(newLightState);
+        isOn = false;
     }
 
-    public void setColor(HueColor color) {
-        if (light.getLightType() == LightType.COLOR || light.getLightType() == LightType.EXTENDED_COLOR) {
-            LightState newLightState = new LightState();
-            newLightState.setXYBWithColor(color);
 
+    public void setColor(int color) {
+        if (light.getLightType() == LightType.COLOR || light.getLightType() == LightType.EXTENDED_COLOR) {
+            int[] colors = {color};
+            double[][] convertedColor = HueColor.bulkConvertToXY(colors , light);
+
+            LightState newLightState = new LightState();
+            newLightState.setXY(convertedColor[0][0], convertedColor[0][1]);
             updateState(newLightState);
         }
     }
 
+
     public int getBrightness() {
-        LightState lightState = light.getLightState();
-        return lightState.getBrightness();
+        if (currentBrightness < 0) {
+            LightState lightState = light.getLightState();
+            return lightState.getBrightness();
+        }
+        return currentBrightness;
     }
 
-    public void setBrightness(int x) {
-        LightState lightState = light.getLightState();
-       // int brightness = lightState.getBrightness();
 
-        System.out.println("old brightness: " + currentBrightness);
-
-
+    public void setBrightness(int brightness) {
         final LightState newLightState = new LightState();
-        int newBrightness = currentBrightness + x;
-        if (newBrightness > 255) {
-            newBrightness = 255;
+        if (brightness > 255) {
+            brightness = 255;
         }
-        if (newBrightness < 0) {
-            newBrightness = 0;
+        if (brightness < 0) {
+            brightness = 0;
         }
-        newLightState.setBrightness(newBrightness);
-        currentBrightness = newBrightness;
+        newLightState.setBrightness(brightness);
+        currentBrightness = brightness;
 
-        System.out.println("new brightness: " + newBrightness);
         updateState(newLightState);
-     /*   light.updateState(newLightState, BridgeConnectionType.LOCAL, new BridgeResponseCallback() {
-            @Override
-            public void handleCallback(Bridge bridge, ReturnCode returnCode, List<ClipResponse> list, List<HueError> errorList) {
-                if (returnCode == ReturnCode.SUCCESS) {
-                    Log.i("Liquiphoto", "Changed brightness of light " + light.getName() + " to " + newLightState.getBrightness());
-                } else {
-                    Log.e("Liquiphoto", "Error changing hue of light " + light.getIdentifier());
-                    for (HueError error : errorList) {
-                        Log.e("Liquiphoto", error.toString());
-                    }
-                }
-            }
-        });*/
     }
+
 
     private void updateState(final LightState lightState) {
         light.updateState(lightState, BridgeConnectionType.LOCAL, new BridgeResponseCallback() {
             @Override
             public void handleCallback(Bridge bridge, ReturnCode returnCode, List<ClipResponse> list, List<HueError> errorList) {
-                if (returnCode == ReturnCode.SUCCESS) {
-                    //Log.i("Liquiphoto", "Changed brightness of light " + light.getName() + " to " + lightState.getBrightness());
-                } else {
-                    Log.e("Liquiphoto", "Error changing hue of light " + light.getIdentifier());
+                if (returnCode != ReturnCode.SUCCESS) {
+                    Log.e("Liquiphoto", "Error updating light: " + light.getIdentifier());
                     for (HueError error : errorList) {
                         Log.e("Liquiphoto", error.toString());
                     }

@@ -44,8 +44,6 @@ public class Discovery extends AppCompatActivity implements View.OnClickListener
     private ImageView pushlinkImageView;
     private ImageView logoImageView;
 
-    private String testIP;
-
     enum UIState {
         Error,
         BridgeDiscoveryRunning,
@@ -72,9 +70,6 @@ public class Discovery extends AppCompatActivity implements View.OnClickListener
         bridgeHandler = BridgeHandler.getInstance();
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        //TYLKO DO TESTÓW
-        //testIP = "192.168.0.14";
-        //testIP = "192.168.1.16";
 
         String bridgeIP = getLastUsedBridgeIP();
         if (bridgeIP == null) {
@@ -84,6 +79,7 @@ public class Discovery extends AppCompatActivity implements View.OnClickListener
             connectToBridge(bridgeIP);
         }
     }
+
 
     private String getLastUsedBridgeIP() {
         List<KnownBridge> bridges = KnownBridges.getAll();
@@ -100,12 +96,14 @@ public class Discovery extends AppCompatActivity implements View.OnClickListener
         }).getIpAddress();
     }
 
+
     private void startBridgeDiscovery() {
         disconnectFromBridge();
         bridgeDiscovery = new BridgeDiscovery();
         bridgeDiscovery.search(BridgeDiscovery.BridgeDiscoveryOption.ALL, bridgeDiscoveryCallback);
         updateUI(UIState.BridgeDiscoveryRunning, "Wyszukiwanie dostępnych mostków hue...");
     }
+
 
     private void stopBridgeDiscovery() {
         if (bridgeDiscovery != null) {
@@ -114,10 +112,10 @@ public class Discovery extends AppCompatActivity implements View.OnClickListener
         }
     }
 
+
     private BridgeDiscoveryCallback bridgeDiscoveryCallback = new BridgeDiscoveryCallback() {
         @Override
         public void onFinished(final List<BridgeDiscoveryResult> results, final ReturnCode returnCode) {
-            // Set to null to prevent stopBridgeDiscovery from stopping it
             bridgeDiscovery = null;
 
             runOnUiThread(new Runnable() {
@@ -125,8 +123,6 @@ public class Discovery extends AppCompatActivity implements View.OnClickListener
                 public void run() {
                     if (returnCode == ReturnCode.SUCCESS) {
                         bridgeDiscoveryResults = results;
-
-                        //updateUI(UIState.BridgeDiscoveryResults, "Znaleziono mostek");
 
                         if (results.isEmpty()) {
                             updateUI(UIState.Error, "Nie znaleziono mostków");
@@ -149,8 +145,6 @@ public class Discovery extends AppCompatActivity implements View.OnClickListener
         stopBridgeDiscovery();
         disconnectFromBridge();
 
-        //bridgeIP = testIP;
-
         Bridge bridge = new BridgeBuilder("app name", "device name")
                 .setIpAddress(bridgeIP)
                 .setConnectionType(BridgeConnectionType.LOCAL)
@@ -162,7 +156,7 @@ public class Discovery extends AppCompatActivity implements View.OnClickListener
 
         bridgeHandler.setBridge(bridge);
 
-        updateUI(UIState.Connecting, "Łączenie z mostkiem..., IP:" + bridgeIP);
+        updateUI(UIState.Connecting, "Łączenie z mostkiem...");
     }
 
 
@@ -220,6 +214,7 @@ public class Discovery extends AppCompatActivity implements View.OnClickListener
         startActivity(intent);
     }
 
+
     private BridgeStateUpdatedCallback bridgeStateUpdatedCallback = new BridgeStateUpdatedCallback() {
         @Override
         public void onBridgeStateUpdated(Bridge bridge, BridgeStateUpdatedEvent bridgeStateUpdatedEvent) {
@@ -239,10 +234,10 @@ public class Discovery extends AppCompatActivity implements View.OnClickListener
         }
     };
 
+
     @Override
     public void onClick(View view) {
         if (view == configureBridgeButton) {
-            //connectToBridge(testIP);
             connectToBridge(bridgeDiscoveryResults.get(0).getIP());
         }
         if (view == retryDiscoveryButton) {
@@ -250,11 +245,11 @@ public class Discovery extends AppCompatActivity implements View.OnClickListener
         }
     }
 
+
     private void updateUI(final UIState state, final String status) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Log.i(TAG, "Status: " + status);
                 discoveryTextView.setText(status);
                 logoImageView.setVisibility(View.VISIBLE);
 

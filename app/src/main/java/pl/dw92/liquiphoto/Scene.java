@@ -1,40 +1,36 @@
 package pl.dw92.liquiphoto;
 
 
+import android.graphics.Color;
 import android.graphics.Point;
-
-import com.philips.lighting.hue.sdk.wrapper.utilities.HueColor;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Scene  {
 
+    public final static int MAX_BRIGHTNESS = 255;
+
     private int width;
     private int height;
     private Point centre;
-    private Point centroid;
     private List<Light> lights;
+    private int color;
 
 
-    private final int BRIGHT_INCREMENT = 15;
-
-
-    public Scene(int width, int height) {
+    Scene(int width, int height) {
         this.lights = new ArrayList<>();
         this.width = width;
         this.height = height;
         this.centre = new Point(width/2, height/2);
-        this.centroid = calcCentroid();
+        this.color = Color.parseColor("#FFFDE7");
     }
 
-    public void addLight(Light light) {
-        lights.add(light);
+
+    public List<Light> getLights() {
+        return lights;
     }
 
-    public void removeLight(Light light) {
-        lights.remove(light);
-    }
 
     public Light getLight(String id) {
         for (Light light : lights) {
@@ -45,11 +41,35 @@ public class Scene  {
         return null;
     }
 
+
+    public void addLight(Light light) {
+        light.turnOn();
+        lights.add(light);
+    }
+
+
+    public void removeLight(Light light) {
+        light.turnOff();
+        lights.remove(light);
+    }
+
+
+    public boolean isOn() {
+        for (Light light : lights) {
+            if (light.isOn()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
     public void turnOnLights() {
         for (Light light : lights) {
             light.turnOn();
         }
     }
+
 
     public void turnOffLights(){
         for (Light light : lights) {
@@ -57,10 +77,24 @@ public class Scene  {
         }
     }
 
-    public void setColor(HueColor color) {
+
+    public void setBrightness(int brightness) {
+        for (final Light light : lights) {
+            light.setBrightness(brightness);
+        }
+    }
+
+
+    public int getColor() {
+        return color;
+    }
+
+
+    public void setColor(int color) {
         for (final Light light : lights) {
             light.setColor(color);
         }
+        this.color = color;
     }
 
     public void setDimensions(int width, int height) {
@@ -68,21 +102,15 @@ public class Scene  {
             this.width = width;
             this.height = height;
             this.centre = new Point(width / 2, height / 2);
-            this.centroid = calcCentroid();
         }
     }
 
     public void updateScene(float x, float z) {
+        final int BRIGHT_INCREMENT = 15;
 
         for (final Light light : lights) {
             float brightness = 0;
             Point position = light.getPosition();
-            System.out.println("Scene dimensions: "+ width + ", "+ height);
-            System.out.println("SensorX: "+x);
-            System.out.println("SensorZ: "+z);
-            System.out.println("Light name: "+ light.getName());
-            System.out.println("Light position: "+ position.x + ", "+ position.y);
-            System.out.println("Centre position: "+ centre.x + ", "+ centre.y);
 
             if ((x > 0 && position.x < centre.x) || (x < 0 && position.x > centre.x)) {
                 brightness += Math.abs(x);
@@ -99,43 +127,7 @@ public class Scene  {
             }
 
             int normalizedBrightness = brightness > 0 ? BRIGHT_INCREMENT : -BRIGHT_INCREMENT;
-            light.setBrightness(normalizedBrightness);
+            light.setBrightness(light.getBrightness()+normalizedBrightness);
         }
-        //calcCentroid();
-    }
-
-    public List<Light> getLights() {
-        return lights;
-    }
-
-    public Point getCentroid() {
-        return centroid;
-    }
-
-    public int getHeight() {
-        return height;
-    }
-
-    public int getWidth() {
-        return width;
-    }
-
-    private Point calcCentroid() {
-        if (lights.isEmpty()) {
-            return centre;
-        }
-        int x = 0;
-        int y = 0;
-        int weights = 0;
-
-        for (final Light light : lights) {
-            Point position = light.getPosition();
-            int brightness = light.getBrightness();
-
-            x += position.x * brightness;
-            y += position.y * brightness;
-            weights += brightness;
-        }
-        return new Point(x / weights, y / weights);
     }
 }
